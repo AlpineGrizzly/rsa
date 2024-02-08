@@ -1,2 +1,0 @@
-# Possible way to verify my encryption is working 
-openssl rsautl -encrypt -pubin -inkey alice.pub >message.encrypted

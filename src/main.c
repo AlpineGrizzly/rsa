@@ -1,7 +1,7 @@
 /**
  * main.c
  * 
- * Simplified DES encryption/decryption tool
+ * RSA encryption/decryption tool using openssl libraries
  * 
  * Author Dalton Kinney
  * Created January 28th, 2024
@@ -17,6 +17,14 @@
 
 #define DEBUG 1
 #define BUF_SIZE 2048
+
+void replace_extension(char* filename, const char* new_extension) {
+    char* dot = strrchr(filename, '.'); // Find the last occurrence of dot (.)
+    if (dot != NULL) {
+        *dot = '\0'; // Null-terminate the base name
+    }
+    strcat(filename, new_extension); // Append the new extension
+}
 
 /**
  * usage
@@ -54,49 +62,24 @@ int get_data(char* filename, char buf[BUF_SIZE]) {
     int count = fread(buf, sizeof(char), BUF_SIZE, pdata);
     fclose(pdata);
 
-    return 1;
-}
-
-int get_key(char *keyfile, char buf[BUF_SIZE]) { 
-    int count;
-    char temp[BUF_SIZE] = {0};
-    FILE *pkeys = fopen(keyfile, "r");
-
-    if (pkeys == NULL) { 
-        return 0;
-    }
-
-    /** Get key from pem file */
-    while(fgets(temp, BUF_SIZE, pkeys))
-    {
-        temp[strcspn(temp, "\n")] = '\0';    // Strip \n character if present
-        if (strcmp(temp, "-----BEGIN PUBLIC KEY-----") == 0) continue;   // Stop reading
-        if (strcmp(temp, "-----BEGIN ENCRYPTED PRIVATE KEY-----") == 0) continue;   // Stop reading
-        if (strcmp(temp, "-----END PUBLIC KEY-----") == 0) break;   // Stop reading
-        if (strcmp(temp, "-----END ENCRYPTED PRIVATE KEY-----") == 0) break;   // Stop reading
-        strcat(buf, temp);
-        // use sscanf on buffer to find the individual fields in the line
-    }
-
-    fclose(pkeys);
-
-    return 1;
+    return count;
 }
 
 int main(int argc, char* argv[]) { 
-    int   opt;                 // Used to hold args as we parse
-    int   mode = 0;            // Holds mode for enc/dec (0 = Enc; 1 = Dec)  
-    
-    char* datafile = NULL;     // Filename of data to be enc/decr 
-    char* keyfile = NULL;
-    char* post_data = NULL;           // Post enc | dec data
+    int opt;      // Used to hold args as we parse
+    int mode = 0; // Holds mode for enc/dec (0 = Enc; 1 = Dec)  
+    int success;  // Success of enc/dec 
+    char *ext;    // Extension for output file depending on enc/dec mode
+    char* datafile = NULL; // Filename of data to be enc/decr 
+    char* keyfile  = NULL; // Filename of public/private pem file
+
 	
     /* Parse arguments */ 
 	while ((opt = getopt(argc, argv, "hf:k:d")) != -1) {
         switch (opt) {
         	case 'h': usage(); break;
         	case 'f': datafile = optarg; break;
-            case 'k': keyfile = optarg; break;
+            case 'k': keyfile  = optarg; break;
             case 'd': mode = 1; break; // Enable decryption mode
         default:
             usage();
@@ -110,24 +93,31 @@ int main(int argc, char* argv[]) {
     }
 
     /** Read data from file */
-    char data[BUF_SIZE] = {0};
+    char data[BUF_SIZE] = {0}; // Data buffer
+    int data_len = get_data(datafile, data); // Read in data from data file
 
-    if (!get_data(datafile, data)) {
+    if (!data_len) {
         printf("Unable to read %s!\n", datafile);
         return 0;
     }
-
-    char key[BUF_SIZE] = {0};
-    if (!get_key(keyfile, key)) {
-        printf("Unable to read %s!\n", keyfile);
-        return 0;
-    }
      
-    /** Perform enc/dec */
-    post_data = mode ? rsa_dec(data, key) : rsa_enc(data, key);
+    /** Perform enc/dec and write to file if successful */
+    if (mode) { 
+        ext = ".txt"; // Replace extension 
+        replace_extension(datafile, ext);
+        success = rsa_dec(data, data_len,  keyfile, datafile);       
+    } else { 
+        ext = ".enc";
+        replace_extension(datafile, ext);
+        success = rsa_enc(data, data_len,  keyfile, datafile);
 
-    /** Write data to out file */
-    printf("write post data to file:\n%s\n", post_data);
+    }
 
+    if (!success) { 
+        printf("Enc/Dec failed!\n");
+        return 0;
+    } 
+
+    printf("Output written to %s\n", datafile);
     return 0;
 }

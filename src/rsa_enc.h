@@ -7,4 +7,4 @@
  * Created Feb 4th, 20234
 */
 
-char* rsa_enc(char* data, char* pub_key);
+int rsa_enc(char* data, int data_len, char* pub_key, char* outfile);

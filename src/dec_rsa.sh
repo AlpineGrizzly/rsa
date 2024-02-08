@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./rsa -d -f test_data.txt -k private_key.pem
+./rsa -d -f test_data.enc -k private_key.pem

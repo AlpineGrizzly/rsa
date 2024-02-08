@@ -1,4 +1,4 @@
 all:
-	gcc main.c rsa_enc.c rsa_dec.c -o rsa
+	gcc main.c rsa_enc.c rsa_dec.c -lcrypto -o rsa
 clean:
 	rm rsa
