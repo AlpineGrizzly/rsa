@@ -14,6 +14,12 @@ but can be changed in the code to support larger.
 python3 gen_keys.py KEYSIZE
 ``` 
 
+
+# Building encrypter/decrypter
+```sh
+cd rsa/src
+make
+```
 ## Encryption with RSA
 Passing the flags -f with a file to encrypt and the public key to use, the result will be a `.enc` file encrypted using rsa in the 
 same directory. 
